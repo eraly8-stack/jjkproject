@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой профиль - SchoolTrade</title>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script>
+       const firebaseConfig = {
+  apiKey: "AIzaSyBmkMb2_bK4GzR7zmAaYF8st1SYtYpeEjo",
+  authDomain: "schooltrade-c233f.firebaseapp.com",
+  projectId: "schooltrade-c233f",
+  storageBucket: "schooltrade-c233f.appspot.com",
+  messagingSenderId: "257089782694",
+  appId: "1:257089782694:web:cbf0aee4a75b7fc58b4567"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        /* Шапка профиля */
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px 60px;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            border: 4px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .profile-info h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .profile-info .email {
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .profile-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Основное содержание */
+        .profile-content {
+            max-width: 1200px;
+            margin: -30px auto 0;
+            padding: 0 20px;
+        }
+
+        .profile-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Мои вещи */
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .item-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .item-image {
+            width: 50px;
+            height: 50px;
+            background: #ddd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .item-points {
+            color: #667eea;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        /* Таблица лидеров */
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leaderboard-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .leaderboard-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .leaderboard-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .rank-1 { background: #fff9e6; }
+        .rank-2 { background: #f8f8f8; }
+        .rank-3 { background: #fff0e6; }
+
+        /* Кнопки действий */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Загрузка */
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        /* Сообщение об ошибке */
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Шапка профиля -->
+    <header class="profile-header">
+        <button class="back-btn" onclick="goBack()">← Назад</button>
+        <button type="button" class="logout-btn" onclick="logout()">🚪 Выйти</button>
+        
+        <div class="profile-avatar">👤</div>
+        <div class="profile-info">
+            <h1 id="userName">Загрузка...</h1>
+            <div class="email" id="userEmail">...</div>
+            <div class="school-info">Класс: <span id="userClass">...</span></div>
+        </div>
+        
+        <div class="profile-stats">
+            <div class="stat-item">
+                <span class="stat-value" id="userPoints">0</span>
+                <span class="stat-label">Баллов</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="userItems">0</span>
+                <span class="stat-label">Вещей</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="userExchanges">0</span>
+                <span class="stat-label">Обменов</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Основное содержание -->
+    <main class="profile-content">
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div class="loading" id="loadingMessage">🔄 Загрузка профиля...</div>
+        
+        <div id="profileContent" style="display: none;">
+            <!-- Мои вещи -->
+            <section class="profile-section">
+                <h2 class="section-title">
+                    <span>🎒 Мои вещи на обмен</span>
+                    <button class="action-btn btn-primary" style="padding: 8px 15px;" onclick="window.location.href = 'add-item.html'">
+                        + Добавить вещь
+                    </button>
+                </h2>
+                <div class="items-grid" id="myItems">
+                    <!-- Вещи будут загружаться здесь -->
+                </div>
+            </section>
+
+            <!-- Мои желания -->
+            <section class="profile-section">
+                <h2 class="section-title">❤️ Мои желания</h2>
+                <div id="myWishes">
+                    <!-- Желания будут здесь -->
+                </div>
+            </section>
+
+            <!-- Таблица лидеров -->
+            <section class="profile-section">
+                <h2 class="section-title">🏆 Школьный рейтинг</h2>
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Место</th>
+                            <th>Имя</th>
+                            <th>Класс</th>
+                            <th>Баллы</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard">
+                        <!-- Рейтинг будет здесь -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Достижения -->
+            <section class="profile-section">
+                <h2 class="section-title">🏅 Мои достижения</h2>
+                <div class="items-grid" id="achievements">
+                    <!-- Достижения будут здесь -->
+                </div>
+            </section>
+
+            <!-- Действия -->
+            <section class="profile-section">
+                <h2 class="section-title">⚡ Быстрые действия</h2>
+                <div class="action-buttons">
+                    <button class="action-btn btn-primary" onclick="marketbase()">
+                        Рынок вещей
+                    </button>
+                    <button class="action-btn btn-secondary" onclick="goToTasks()">
+                        Задания
+                    </button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // Текущий пользователь
+        let currentUser = null;
+        let userData = null;
+
+        // Проверяем авторизацию при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await loadUserProfile(user);
+                } else {
+                    // Не авторизован - возвращаем на главную
+                    window.location.href = 'index.html';
+                }
+            });
+        });
+
+        // Загрузка профиля пользователя
+        async function loadUserProfile(user) {
+            try {
+                // Загружаем данные из Firestore
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                
+                if (userDoc.exists) {
+                    userData = userDoc.data();
+                    
+                    // Заполняем информацию в шапке
+                    document.getElementById('userName').textContent = userData.fullName || user.email.split('@')[0];
+                    document.getElementById('userEmail').textContent = user.email;
+                    document.getElementById('userClass').textContent = userData.class || 'Не указан';
+                    document.getElementById('userPoints').textContent = userData.points || 0;
+                    document.getElementById('userItems').textContent = userData.itemsCount || 0;
+                    document.getElementById('userExchanges').textContent = userData.exchangesCount || 0;
+                    
+                    // Загружаем дополнительные данные
+                    await loadUserItems(user.uid);
+                    await loadLeaderboard();
+                    await loadAchievements(user.uid);
+                    
+                    // Показываем контент
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    document.getElementById('profileContent').style.display = 'block';
+                    
+                } else {
+                    showError('Данные профиля не найдены');
+                }
+                
+            } catch (error) {
+                console.error('Ошибка загрузки профиля:', error);
+                showError('Ошибка загрузки профиля: ' + error.message);
+            }
+        }
+
+        // Загрузка вещей пользователя
+        async function loadUserItems(userId) {
+            try {
+                const itemsSnapshot = await db.collection('items')
+                    .where('ownerId', '==', userId)
+                    .limit(6)
+                    .get();
+                
+                const itemsContainer = document.getElementById('myItems');
+                itemsContainer.innerHTML = '';
+                
+                if (itemsSnapshot.empty) {
+                    itemsContainer.innerHTML = '<p>У вас пока нет вещей на обмен</p>';
+                    return;
+                }
+                
+                itemsSnapshot.forEach(doc => {
+                    const item = doc.data();
+                    itemsContainer.innerHTML += `
+                        <div class="item-card">
+                            <div class="item-image">${item.emoji || '📦'}</div>
+                            <h3>${item.title}</h3>
+                            <div class="item-points">${item.points || 0} баллов</div>
+                            <div class="item-status">${item.status || 'Доступно'}</div>
+                        </div>
+                    `;
+                });
+                
+            } catch (error) {
+                console.error('Ошибка загрузки вещей:', error);
+            }
+        }
+
+        // Загрузка таблицы лидеров
+        async function loadLeaderboard() {
+            try {
+                const leaderboardSnapshot = await db.collection('users')
+                    .orderBy('points', 'desc')
+                    .limit(10)
+                    .get();
+                
+                const leaderboardBody = document.getElementById('leaderboard');
+                leaderboardBody.innerHTML = '';
+                
+                let rank = 1;
+                leaderboardSnapshot.forEach(doc => {
+                    const user = doc.data();
+                    const rowClass = rank <= 3 ? `rank-${rank}` : '';
+                    
+                    leaderboardBody.innerHTML += `
+                        <tr class="${rowClass}">
+                            <td>${rank}</td>
+                            <td>${user.fullName || 'Пользователь'}</td>
+                            <td>${user.class || '?'}</td>
+                            <td><strong>${user.points || 0}</strong></td>
+                        </tr>
+                    `;
+                    rank++;
+                });
+                
+            } catch (error) {
+                console.error('Ошибка загрузки рейтинга:', error);
+            }
+        }
+
+        // Загрузка достижений
+        async function loadAchievements(userId) {
+            const achievementsContainer = document.getElementById('achievements');
+            achievementsContainer.innerHTML = `
+                <div class="item-card">
+                    <div class="item-image">🌱</div>
+                    <h3>Эко-герой</h3>
+                    <div>Обменял 5+ вещей</div>
+                </div>
+                <div class="item-card">
+                    <div class="item-image">⚡</div>
+                    <h3>Активный</h3>
+                    <div>5 дней подряд в системе</div>
+                </div>
+                <div class="item-card">
+                    <div class="item-image">⭐</div>
+                    <h3>Помощник</h3>
+                    <div>Помог 3+ одноклассникам</div>
+                </div>
+            `;
+        }
+
+        // Функции кнопок
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+       function logout() {
+    if (confirm('Вы уверены, что хотите выйти?')) {
+        auth.signOut()
+            .then(() => {
+                // После выхода отправляем на главную или страницу входа
+                window.location.href = 'index.html';
+            })
+            .catch(error => {
+                console.error('Ошибка при выходе:', error);
+                alert('Не удалось выйти. Попробуйте ещё раз.');
+            });
+    }
+}
+        function addItem() {
+            alert('Здесь будет форма добавления новой вещи!\n(В разработке)');
+        }
+
+        function editProfile() {
+            alert('Здесь будет форма редактирования профиля!\n(В разработке)');
+        }
+
+        function viewStats() {
+            alert('Здесь будет подробная статистика!\n(В разработке)');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function goToTasks() {
+    window.location.href = 'tasks.html';
+}
+       
+
+
+    </script>
+</body>
+</html>

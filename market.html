@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Рынок вещей - SchoolTrade</title>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
+        body { background: #f5f5f5; min-height: 100vh; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid #667eea; }
+        .back-btn { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; text-decoration: none; }
+        .back-btn:hover { background: #764ba2; }
+        .page-title { color: #333; font-size: 1.8rem; }
+
+        /* Вещи */
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .item-card { background: #f8f9fa; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .item-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .item-emoji { font-size: 2.5rem; width: 60px; height: 60px; background: #eef2ff; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .item-title { font-size: 1.3rem; font-weight: bold; color: #333; }
+        .item-condition, .item-category { background: #eef2ff; color: #667eea; padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; display: inline-block; margin-top: 5px; }
+        .item-points { font-size: 1.5rem; font-weight: bold; color: #667eea; margin: 10px 0; }
+        .item-description { color: #555; line-height: 1.5; margin-bottom: 10px; }
+        .buy-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; transition: all 0.3s ease; }
+        .buy-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+
+        /* Уведомления */
+        .notification { padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="goBack()">← Назад</button>
+            <h1 class="page-title">🛒 Рынок вещей</h1>
+        </div>
+
+        <div class="notification success" id="successMessage"></div>
+        <div class="notification error" id="errorMessage"></div>
+
+        <div class="items-grid" id="itemsGrid">
+            <!-- Вещи подгружаются сюда -->
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBmkMb2_bK4GzR7zmAaYF8st1SYtYpeEjo",
+            authDomain: "schooltrade-c233f.firebaseapp.com",
+            projectId: "schooltrade-c233f",
+            storageBucket: "schooltrade-c233f.appspot.com",
+            messagingSenderId: "257089782694",
+            appId: "1:257089782694:web:cbf0aee4a75b7fc58b4567"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    loadItems();
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+        });
+
+       function goBack() {
+            window.location.href = 'profile-c.html';
+        }
+
+        function showSuccess(message) {
+            const box = document.getElementById('successMessage');
+            box.textContent = message;
+            box.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function showError(message) {
+            const box = document.getElementById('errorMessage');
+            box.textContent = message;
+            box.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        async function loadItems() {
+            const grid = document.getElementById('itemsGrid');
+            grid.innerHTML = '';
+
+            try {
+                const snapshot = await db.collection('items').orderBy('createdAt', 'desc').get();
+                snapshot.forEach(doc => {
+                    const item = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'item-card';
+
+                    const conditionText = {
+                        'new': 'Новое',
+                        'good': 'Отличное',
+                        'normal': 'Хорошее',
+                        'used': 'Б/у',
+                        'worn': 'Потёртое',
+                        'broken': 'Требует ремонта'
+                    }[item.condition] || 'Не указано';
+
+                    const categoryText = {
+                        'books': '📚 Учебники',
+                        'clothes': '👕 Одежда',
+                        'electronics': '💻 Электроника',
+                        'games': '🎮 Игры',
+                        'sport': '⚽ Спорт',
+                        'stationery': '📝 Канцелярия',
+                        'other': '📦 Другое'
+                    }[item.category] || 'Категория';
+
+                    card.innerHTML = `
+                        <div class="item-header">
+                            <div class="item-emoji">${item.emoji || '📦'}</div>
+                            <div>
+                                <div class="item-title">${item.title}</div>
+                                <div class="item-condition">${conditionText}</div>
+                            </div>
+                        </div>
+                        <div class="item-points">${item.points} баллов</div>
+                        <div class="item-description">${item.description}</div>
+                        <div class="item-category">${categoryText}</div>
+                        <button class="buy-btn" onclick="sendRequest('${doc.id}')">Отправить заявку на покупку</button>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (error) {
+                console.error(error);
+                showError('Ошибка загрузки вещей: ' + error.message);
+            }
+        }
+
+        async function sendRequest(itemId) {
+            if (!currentUser) return showError('Вы не авторизованы!');
+
+            try {
+                // Добавим заявку в подколлекцию "requests"
+                await db.collection('items').doc(itemId).collection('requests').add({
+                    userId: currentUser.uid,
+                    email: currentUser.email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showSuccess('Заявка успешно отправлена!');
+            } catch (error) {
+                console.error(error);
+                showError('Ошибка отправки заявки: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
