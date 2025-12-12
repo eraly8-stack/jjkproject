@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Задания для баллов - SchoolTrade</title>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBmkMb2_bK4GzR7zmAaYF8st1SYtYpeEjo",
+            authDomain: "schooltrade-c233f.firebaseapp.com",
+            projectId: "schooltrade-c233f",
+            storageBucket: "schooltrade-c233f.appspot.com",
+            messagingSenderId: "257089782694",
+            appId: "1:257089782694:web:cbf0aee4a75b7fc58b4567"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .back-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .points-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .page-title {
+            text-align: center;
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Задания по категориям */
+        .tasks-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease;
+        }
+
+        .category-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .category-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .category-title {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .category-desc {
+            color: #666;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .tasks-list {
+            margin-top: 20px;
+        }
+
+        .task-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-info h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .task-desc {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .task-points {
+            background: #667eea;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .task-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .task-btn:hover {
+            background: #218838;
+        }
+
+        .task-btn.completed {
+            background: #6c757d;
+            cursor: default;
+        }
+
+        /* Модальное окно с заданием */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .task-question {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .task-options {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .option-btn {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+
+        .option-btn:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .option-btn.selected {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .submit-task {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+        }
+
+        .submit-task:hover {
+            background: #764ba2;
+        }
+
+        /* Уведомления */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 1001;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .success-notif {
+            background: #28a745;
+        }
+
+        .error-notif {
+            background: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Шапка -->
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='profile-c.html'">
+                Назад
+            </button>
+            <h1 style="color: #333;">🎮 Заработай баллы</h1>
+            <div class="points-display">
+                <span id="userPoints">0</span> баллов
+            </div>
+        </div>
+
+        <h1 class="page-title">Выполняй задания и получай баллы!</h1>
+
+        <!-- Категории заданий -->
+        <div class="tasks-categories">
+            <!-- Математика -->
+            <div class="category-card">
+                <div class="category-icon">🧮</div>
+                <h2 class="category-title">Математика</h2>
+                <p class="category-desc">Решай уравнения, задачи и головоломки</p>
+                
+                <div class="tasks-list">
+                    <div class="task-item" data-task="math1">
+                        <div class="task-info">
+                            <h4>Простое уравнение</h4>
+                            <p class="task-desc">Реши: 2x + 5 = 15</p>
+                        </div>
+                        <div class="task-points">+25</div>
+                    </div>
+                    
+                    <div class="task-item" data-task="math2">
+                        <div class="task-info">
+                            <h4>Геометрическая задача</h4>
+                            <p class="task-desc">Найди площадь треугольника</p>
+                        </div>
+                        <div class="task-points">+50</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Экология -->
+            <div class="category-card">
+                <div class="category-icon">🌱</div>
+                <h2 class="category-title">Экология</h2>
+                <p class="category-desc">Проверь знания об окружающей среде</p>
+                
+                <div class="tasks-list">
+                    <div class="task-item" data-task="eco1">
+                        <div class="task-info">
+                            <h4>Сортировка мусора</h4>
+                            <p class="task-desc">Куда выбрасывать пластик?</p>
+                        </div>
+                        <div class="task-points">+30</div>
+                    </div>
+                    
+                    <div class="task-item" data-task="eco2">
+                        <div class="task-info">
+                            <h4>Экономия воды</h4>
+                            <p class="task-desc">Как экономить воду дома?</p>
+                        </div>
+                        <div class="task-points">+40</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Школьные знания -->
+            <div class="category-card">
+                <div class="category-icon">🎓</div>
+                <h2 class="category-title">Общие знания</h2>
+                <p class="category-desc">Проверь свою эрудицию</p>
+                
+                <div class="tasks-list">
+                    <div class="task-item" data-task="gen1">
+                        <div class="task-info">
+                            <h4>Столицы мира</hh4>
+                            <p class="task-desc">Столица Казахстана?</p>
+                        </div>
+                        <div class="task-points">+20</div>
+                    </div>
+                    
+                    <div class="task-item" data-task="gen2">
+                        <div class="task-info">
+                            <h4>Литература</h4>
+                            <p class="task-desc">Автор "Евгения Онегина"</p>
+                        </div>
+                        <div class="task-points">+35</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ежедневные задания -->
+        <div class="category-card" style="max-width: 800px; margin: 0 auto;">
+            <div class="category-icon">📅</div>
+            <h2 class="category-title">Ежедневные задания</h2>
+            <p class="category-desc">Выполняй каждый день для постоянного дохода баллов</p>
+            
+            <div class="tasks-list">
+                <div class="task-item" data-task="daily1">
+                    <div class="task-info">
+                        <h4>Зайди на сайт</h4>
+                        <p class="task-desc">Просто зайди на SchoolTrade сегодня</p>
+                    </div>
+                    <div class="task-points">+10</div>
+                </div>
+                
+                <div class="task-item" data-task="daily2">
+                    <div class="task-info">
+                        <h4>Добавь вещь</h4>
+                        <p class="task-desc">Выложи одну вещь на обмен</p>
+                    </div>
+                    <div class="task-points">+50</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно с заданием -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Задание</h2>
+                <button class="close-modal" onclick="closeModal()">×</button>
+            </div>
+            
+            <div id="modalContent">
+                <!-- Содержимое задания -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Уведомления -->
+    <div class="notification success-notif" id="successNotif"></div>
+    <div class="notification error-notif" id="errorNotif"></div>
+
+    <script>
+        let currentUser = null;
+        let currentTask = null;
+        let selectedOption = null;
+
+        // База заданий
+        const tasksDB = {
+            'math1': {
+                title: 'Реши уравнение',
+                question: 'Решите уравнение: 2x + 5 = 15',
+                points: 25,
+                options: [
+                    { text: 'x = 5', correct: true },
+                    { text: 'x = 10', correct: false },
+                    { text: 'x = 7.5', correct: false },
+                    { text: 'x = 6', correct: false }
+                ],
+                explanation: '2x + 5 = 15 → 2x = 15 - 5 → 2x = 10 → x = 5'
+            },
+            'math2': {
+                title: 'Площадь треугольника',
+                question: 'Найдите площадь треугольника с основанием 8 см и высотой 5 см',
+                points: 50,
+                options: [
+                    { text: '20 см²', correct: true },
+                    { text: '40 см²', correct: false },
+                    { text: '13 см²', correct: false },
+                    { text: '25 см²', correct: false }
+                ],
+                explanation: 'S = ½ × основание × высота = ½ × 8 × 5 = 20 см²'
+            },
+            'eco1': {
+                title: 'Сортировка мусора',
+                question: 'В какой контейнер нужно выбрасывать пластиковые бутылки?',
+                points: 30,
+                options: [
+                    { text: 'В контейнер для пластика', correct: true },
+                    { text: 'В общий мусор', correct: false },
+                    { text: 'Сжигать', correct: false },
+                    { text: 'Закапывать в землю', correct: false }
+                ],
+                explanation: 'Пластик нужно сдавать на переработку в специальные контейнеры'
+            },
+            'daily1': {
+                title: 'Ежедневный вход',
+                question: 'Вы вошли на сайт сегодня?',
+                points: 10,
+                options: [
+                    { text: 'Да, я здесь!', correct: true },
+                    { text: 'Нет', correct: false }
+                ],
+                explanation: 'Спасибо за активность! +10 баллов за посещение'
+            }
+        };
+
+        // Проверяем авторизацию
+        document.addEventListener('DOMContentLoaded', function() {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await loadUserPoints();
+                    setupTaskButtons();
+                } else {
+                    // Не авторизован - на главную
+                    window.location.href = 'index.html';
+                }
+            });
+        });
+
+        // Загружаем баллы пользователя
+        async function loadUserPoints() {
+            try {
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                if (userDoc.exists) {
+                    const data = userDoc.data();
+                    document.getElementById('userPoints').textContent = data.points || 0;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки баллов:', error);
+            }
+        }
+
+        // Настройка кнопок заданий
+        function setupTaskButtons() {
+            document.querySelectorAll('.task-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const taskId = this.dataset.task;
+                    openTask(taskId);
+                });
+            });
+        }
+
+        // Открытие задания
+        function openTask(taskId) {
+            const task = tasksDB[taskId];
+            if (!task) return;
+
+            currentTask = taskId;
+            selectedOption = null;
+
+            document.getElementById('modalTitle').textContent = task.title;
+            
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="task-question">${task.question}</div>
+                <div class="task-points" style="text-align: center; margin-bottom: 20px; font-size: 1.5rem;">
+                    Награда: <strong>${task.points} баллов</strong>
+                </div>
+                <div class="task-options" id="taskOptions">
+                    ${task.options.map((opt, index) => `
+                        <button class="option-btn" data-index="${index}">
+                            ${opt.text}
+                        </button>
+                    `).join('')}
+                </div>
+                <button class="submit-task" onclick="submitAnswer()" id="submitBtn">
+                    ✅ Проверить ответ
+                </button>
+            `;
+
+            // Назначаем обработчики для вариантов ответа
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.option-btn').forEach(b => {
+                        b.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    selectedOption = parseInt(this.dataset.index);
+                });
+            });
+
+            document.getElementById('taskModal').style.display = 'flex';
+        }
+
+        // Закрытие модального окна
+        function closeModal() {
+            document.getElementById('taskModal').style.display = 'none';
+            currentTask = null;
+            selectedOption = null;
+        }
+
+        // Проверка ответа
+        async function submitAnswer() {
+            if (selectedOption === null) {
+                showNotification('Выберите вариант ответа!', 'error');
+                return;
+            }
+
+            const task = tasksDB[currentTask];
+            const isCorrect = task.options[selectedOption].correct;
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (isCorrect) {
+                // Начисляем баллы
+                try {
+                    await db.collection('users').doc(currentUser.uid).update({
+                        points: firebase.firestore.FieldValue.increment(task.points)
+                    });
+
+                    // Сохраняем историю выполнения
+                    await db.collection('taskHistory').add({
+                        userId: currentUser.uid,
+                        taskId: currentTask,
+                        points: task.points,
+                        completedAt: new Date().toISOString()
+                    });
+
+                    submitBtn.innerHTML = '✅ Правильно! +' + task.points + ' баллов';
+                    submitBtn.style.background = '#28a745';
+                    submitBtn.disabled = true;
+
+                    showNotification(`🎉 Правильно! Вы получили ${task.points} баллов!, 'success'`);
+                    
+                    // Обновляем отображение баллов
+                    await loadUserPoints();
+                    
+                    // Через 2 секунды закрываем
+                    setTimeout(() => {
+                        closeModal();
+                    }, 2000);
+
+                } catch (error) {
+                    console.error('Ошибка начисления баллов:', error);
+                    showNotification('Ошибка начисления баллов', 'error');
+                }
+            } else {
+                submitBtn.innerHTML = '❌ Неправильно';
+                submitBtn.style.background = '#dc3545';
+                showNotification(`Правильный ответ: ${task.explanation}`, 'error');
+                
+                // Через 2 секунды возвращаем кнопку
+                setTimeout(() => {
+                    submitBtn.innerHTML = '✅ Проверить ответ';
+                    submitBtn.style.background = '#667eea';
+                    submitBtn.disabled = false;
+                }, 2000);
+            }
+        }
+
+        // Показ уведомлений
+        function showNotification(message, type) {
+            const notif = document.getElementById(type === 'success' ? 'successNotif' : 'errorNotif');
+            notif.textContent = message;
+            notif.style.display = 'block';
+            
+            setTimeout(() => {
+                notif.style.display = 'none';
+            }, 3000);
+        }
+
+        // Закрытие модального окна по клику вне его
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('taskModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
